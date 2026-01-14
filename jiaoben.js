@@ -18,7 +18,31 @@ const CUSTOM_FOLDER_ICON = window.AppConfig.folderIcon;
 const UI_CONF = window.AppConfig.uiConfig;
 
 let tree = null, clipboard = null, activePath = [], openPanels = [], modalMode = '';
-const isMobile = () => window.innerWidth <= 768;
+
+const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+};
+
+function updateLayout() {
+    const mobile = isMobile();
+    if (mobile) {
+        document.body.classList.add('is-mobile');
+    } else {
+        document.body.classList.remove('is-mobile');
+    }
+    const pos = mobile ? (UI_CONF.mobile_navbar_position || 'top') : (UI_CONF.pc_navbar_position || 'top');
+    if (pos === 'bottom') {
+        document.body.classList.add('nav-bottom');
+    } else {
+        document.body.classList.remove('nav-bottom');
+    }
+}
+updateLayout();
+window.addEventListener('resize', () => {
+    updateLayout();
+    render();
+});
+
 function closeAllMenusInternal() { closeFromLevel(0); document.getElementById('ctx-menu').style.display='none'; document.getElementById('move-tool').style.display='none'; }
 function closeDialog() { document.getElementById('modal-overlay').style.display='none'; const btn = document.getElementById('btn-confirm'); btn.onclick = confirmDialog; btn.innerText = '保存'; btn.style.backgroundColor = 'var(--accent)'; btn.style.color = '#121212'; noteToDeleteId = null; }
 function closeFromLevel(l) { for(let i=openPanels.length-1; i>=l; i--) if(openPanels[i]) { openPanels[i].remove(); openPanels[i]=null; } }
@@ -48,6 +72,7 @@ function updateClock() {
     document.getElementById('lunar-part').innerText = getLunarDateString(d);
 }
 async function init() { 
+    updateLayout();
     if (window.__PRELOADED_TREE__) { tree = window.__PRELOADED_TREE__; render(); }
     try {
         const res = await fetch('/api/get_bookmarks');
@@ -98,12 +123,30 @@ function openMenu(pEl, node, path) {
     document.body.appendChild(panel); openPanels[level-1]=panel;
     if(!isMobile()){
         const rect = pEl.getBoundingClientRect(); const viewportH = window.innerHeight; let top, left;
-        if(level === 1) { top = rect.bottom; left = rect.left; if(top + panel.offsetHeight > viewportH) top = rect.top - panel.offsetHeight; }
-        else { top = rect.top; left = rect.right; if(top + panel.offsetHeight > viewportH) top = viewportH - panel.offsetHeight - 10; if(left + panel.offsetWidth > window.innerWidth) left = rect.left - panel.offsetWidth; }
+        if(level === 1) { 
+            top = rect.bottom; 
+            left = rect.left; 
+            if(top + panel.offsetHeight > viewportH) top = rect.top - panel.offsetHeight; 
+        }
+        else { 
+            top = rect.top; 
+            left = rect.right; 
+            if(top + panel.offsetHeight > viewportH) top = viewportH - panel.offsetHeight - 10; 
+            if(left + panel.offsetWidth > window.innerWidth) left = rect.left - panel.offsetWidth; 
+        }
         panel.style.top = Math.max(5, top) + 'px'; panel.style.left = left + 'px';
     }
 }
-function showOverflowMenu(items, rect, start) { closeFromLevel(0); const p = document.createElement('div'); p.className='menu-panel'; items.forEach((it, i) => p.appendChild(createItem(it, [start+i]))); document.body.appendChild(p); openPanels[0]=p; if(!isMobile()){ p.style.top=rect.bottom+'px'; p.style.left=Math.max(5, rect.right-180)+'px'; } }
+function showOverflowMenu(items, rect, start) { 
+    closeFromLevel(0); const p = document.createElement('div'); p.className='menu-panel'; items.forEach((it, i) => p.appendChild(createItem(it, [start+i]))); document.body.appendChild(p); openPanels[0]=p; 
+    if(!isMobile()){ 
+        const viewportH = window.innerHeight;
+        let top = rect.bottom;
+        if (top + p.offsetHeight > viewportH) top = rect.top - p.offsetHeight;
+        p.style.top=top+'px'; 
+        p.style.left=Math.max(5, rect.right-180)+'px'; 
+    } 
+}
 function handleCtx(e, path) {
     activePath = [...path]; 
     const menu = document.getElementById('ctx-menu'); 
