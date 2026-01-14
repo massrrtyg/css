@@ -66,12 +66,21 @@ body::before {
 #note-textarea { width: 100%; flex-grow: 1; resize: none; border: none; outline: none; background: transparent; color: var(--text-main); font-size: 14px; line-height: 1.5; font-family: inherit; }
 #note-add-btn { cursor: pointer; padding: 0 8px; font-size: 20px; line-height: 1; color: var(--accent); user-select: none; }
 #note-add-btn:hover { opacity: 0.8; transform: scale(1.1); }
-@media (max-width: 768px) {
-    #time-prefix { font-size: 20px; margin-right: 10px; } 
-    #time-val { font-size: 48px; width: 210px; text-align: left; }
-    #date-info { font-size: 14px; gap: 10px; } .search-group { width: 92%; }
-    .menu-panel, #ctx-menu, #move-tool { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); width: 85%; max-width: 300px; }
-    #note-icon { right: 15px; bottom: 15px; width: 28px; height: 28px; }
-    #note-panel { right: 15px; bottom: 55px; width: calc(100% - 30px); height: 50vh; }
-    #modal-box { width: 90%; }
-}
+
+.is-mobile #time-prefix { font-size: 20px; margin-right: 10px; } 
+.is-mobile #time-val { font-size: 48px; width: 210px; text-align: left; }
+.is-mobile #date-info { font-size: 14px; gap: 10px; } 
+.is-mobile .search-group { width: 92%; }
+.is-mobile .menu-panel, 
+.is-mobile #ctx-menu, 
+.is-mobile #move-tool { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); width: 85%; max-width: 300px; }
+.is-mobile #note-icon { right: 15px; bottom: 15px; width: 28px; height: 28px; }
+.is-mobile #note-panel { right: 15px; bottom: 55px; width: calc(100% - 30px); height: 50vh; }
+.is-mobile #modal-box { width: 90%; }
+body.nav-bottom .nav-bar { order: 10; border-bottom: none; border-top: 1px solid var(--border); }
+body.nav-bottom .main { order: 1; }
+.is-mobile.nav-bottom .nav-bar { padding-bottom: env(safe-area-inset-bottom, 0px); height: calc(36px + env(safe-area-inset-bottom, 0px)); }
+body.nav-bottom #note-icon { bottom: auto; top: 20px; }
+body.nav-bottom #note-panel { bottom: auto; top: 65px; }
+body.nav-bottom.is-mobile #note-icon { bottom: auto; top: 15px; }
+body.nav-bottom.is-mobile #note-panel { bottom: auto; top: 55px; }
