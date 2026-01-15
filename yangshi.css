@@ -20,6 +20,7 @@ body::before {
 .item { display: flex; align-items: center; padding: 0 10px; height: 28px; color: var(--text-main); border-radius: 4px; margin-right: 2px; cursor: default; white-space: nowrap; text-decoration: none; flex-shrink: 0; font-size: 12px; font-weight: 500; }
 .item:hover { background: var(--hover); }
 .icon-wrapper { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+.item.icon-only .icon-wrapper { margin-right: 0; }
 .item img { width: 16px; height: 16px; border-radius: 2px; }
 .menu-panel { position: fixed; background: var(--bg-panel); backdrop-filter: blur(25px); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 5px 0; border-radius: 6px; min-width: 180px; max-width: 400px; z-index: 2000; overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 50px); }
 .menu-panel::-webkit-scrollbar { width: 4px; }
