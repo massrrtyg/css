@@ -68,7 +68,7 @@ function updateClock() {
     document.getElementById('time-prefix').innerText = h<5?"凌晨":h<11?"早上":h<13?"中午":h<18?"下午":"晚上";
     document.getElementById('time-val').innerText = `${h%12||12}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
     document.getElementById('date-part').innerText = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-    document.getElementById('week-part').innerText = ["周日","周一","周三","周四","周五","周六"][d.getDay()];
+    document.getElementById('week-part').innerText = ["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
     document.getElementById('lunar-part').innerText = getLunarDateString(d);
 }
 async function init() { 
