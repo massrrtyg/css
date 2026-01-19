@@ -17,7 +17,7 @@ const FALLBACK_ICON = window.AppConfig.fallbackIcon;
 const CUSTOM_FOLDER_ICON = window.AppConfig.folderIcon;
 const UI_CONF = window.AppConfig.uiConfig;
 
-let tree = null, clipboard = null, activePath = [], openPanels = [], modalMode = '';
+let tree = null, activePath = [], openPanels = [], modalMode = '';
 
 const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -188,12 +188,12 @@ function handleCtx(e, path) {
     }
     const isRoot = path.length === 0;
     const node = !isRoot ? getNode(path) : null;
+    
     document.getElementById('m-edit').style.display = isRoot ? 'none' : 'block'; 
     document.getElementById('m-del').style.display = isRoot ? 'none' : 'block'; 
-    document.getElementById('m-cut').style.display = isRoot ? 'none' : 'block';
     document.getElementById('m-move-tool').style.display = isRoot ? 'none' : 'flex';
     document.getElementById('m-sep-1').style.display = isRoot ? 'none' : 'block';
-    document.getElementById('m-paste').style.opacity = (clipboard && (isRoot || node.children)) ? 1 : 0.3;
+    
     const mti = document.getElementById('m-toggle-icon'); 
     if(!isRoot && !node.children){ 
         mti.style.display='flex'; 
@@ -296,8 +296,6 @@ function confirmDialog() {
 }
 
 function onDelete() { const i=activePath.pop(), pa=activePath.length?getNode(activePath).children:getToolbarList(); pa.splice(i,1); save(); closeAllMenusInternal(); }
-function onCut() { const i=activePath.pop(), pa=activePath.length?getNode(activePath).children:getToolbarList(); clipboard=pa.splice(i,1)[0]; save(); closeAllMenusInternal(); }
-function onPaste() { const n=activePath.length?getNode(activePath):null, ta=n?n.children:getToolbarList(); if(ta){ ta.push(clipboard); clipboard=null; save(); } closeAllMenusInternal(); }
 function onToggleIconMode() { const n=getNode(activePath); n.icon_only=!n.icon_only; save(); closeAllMenusInternal(); }
 function refreshFloatingPanels() { openPanels.forEach(p=>{ if(p?.dataset.path){ const path=JSON.parse(p.dataset.path), n=getNode(path); p.innerHTML=''; n.children.forEach((c,i)=>p.appendChild(createItem(c,[...path,i]))); }}); }
 
