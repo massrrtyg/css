@@ -195,7 +195,7 @@ function confirmDialog() {
         const name = document.getElementById('inp-name').value.trim(), url = document.getElementById('inp-url').value.trim(), folderPath = JSON.parse(document.getElementById('inp-folder').value);
         if (!name) return; let newNode = { title: name };
         if (modalMode === 'addLink' || (modalMode === 'edit' && !getNode(activePath).children)) newNode.url = url;
-        else if (modalMode === 'addFolder' || (modalMode === 'edit' && getNode(activePath).children)) newNode.children = [];
+        else if (modalMode === 'addFolder') newNode.children = [];
         if (modalMode === 'edit') { const oldNode = getNode(activePath); newNode.icon_only = oldNode.icon_only; Object.assign(oldNode, newNode); const oldPath = activePath.slice(0, -1); if (JSON.stringify(oldPath) !== JSON.stringify(folderPath)) { const oldIdx = activePath[activePath.length-1], oldParent = oldPath.length ? getNode(oldPath).children : getToolbarList(); oldParent.splice(oldIdx, 1); const newParent = folderPath.length ? getNode(folderPath).children : getToolbarList(); newParent.push(oldNode); } }
         else { const targetFolder = folderPath.length ? getNode(folderPath) : tree.bookmarks[0]; if (!targetFolder.children) targetFolder.children = []; targetFolder.children.push(newNode); }
         closeDialog(); save();
