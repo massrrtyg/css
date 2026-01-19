@@ -23,6 +23,19 @@ const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 };
 
+function escapeHtml(text) {
+    if (!text) return text;
+    return text.replace(/[&<>"']/g, function(m) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[m];
+    });
+}
+
 function updateLayout() {
     const mobile = isMobile();
     if (mobile) {
@@ -47,6 +60,7 @@ function closeAllMenusInternal() { closeFromLevel(0); document.getElementById('c
 function closeDialog() { document.getElementById('modal-overlay').style.display='none'; const btn = document.getElementById('btn-confirm'); btn.onclick = confirmDialog; btn.innerText = '保存'; btn.style.backgroundColor = 'var(--accent)'; btn.style.color = '#121212'; noteToDeleteId = null; }
 function closeFromLevel(l) { for(let i=openPanels.length-1; i>=l; i--) if(openPanels[i]) { openPanels[i].remove(); openPanels[i]=null; } }
 function closeAllMenus(e) { if(e && (e.target.closest('.menu-panel') || e.target.closest('#ctx-menu') || e.target.closest('#move-tool'))) return; closeAllMenusInternal(); }
+
 function getLunarDateString(date) {
     const opts = { calendar: 'chinese', timeZone: 'Asia/Shanghai' };
     const mStr = date.toLocaleString('zh-CN-u-ca-chinese', { ...opts, month: 'short' });
@@ -63,6 +77,7 @@ function getLunarDateString(date) {
     let dayText = lDay===10?'初十':lDay===20?'二十':lDay===30?'三十':lDay<10?'初'+cnNums[lDay]:lDay<20?'十'+cnNums[lDay-10]:'廿'+cnNums[lDay-20];
     return monthText + dayText;
 }
+
 function updateClock() {
     const d = new Date(); const h = d.getHours();
     document.getElementById('time-prefix').innerText = h<5?"凌晨":h<11?"早上":h<13?"中午":h<18?"下午":"晚上";
@@ -71,6 +86,7 @@ function updateClock() {
     document.getElementById('week-part').innerText = ["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
     document.getElementById('lunar-part').innerText = getLunarDateString(d);
 }
+
 async function init() { 
     updateLayout();
     if (window.__PRELOADED_TREE__) { tree = window.__PRELOADED_TREE__; render(); }
@@ -80,8 +96,10 @@ async function init() {
         else if (res.status === 401) window.location.href = '/login';
     } catch (e) {}
 }
+
 function getToolbarList() { return tree.bookmarks[0].children; }
 function getNode(p) { let curr = getToolbarList(); for(let i=0; i<p.length; i++){ if(i===p.length-1) return curr[p[i]]; curr=curr[p[i]].children; } return curr; }
+
 function render() {
     const bar = document.getElementById('nav-bar'); if(!bar) return; bar.innerHTML = '';
     const list = getToolbarList();
@@ -99,6 +117,7 @@ function render() {
     }
     refreshFloatingPanels();
 }
+
 function createItem(node, path) {
     const isF = 'children' in node; const el = document.createElement(isF?'div':'a'); el.className='item'; el.setAttribute('data-path', JSON.stringify(path));
     const currentMode = isMobile() ? UI_CONF.mobile_icon_only_mode : UI_CONF.pc_icon_only_mode;
@@ -111,11 +130,19 @@ function createItem(node, path) {
     if(!isF && hideText) el.classList.add('icon-only');
     const dom = node.url ? node.url.split('/')[2].replace(/:/g, '-') : "";
     const icon = isF ? CUSTOM_FOLDER_ICON : `/static/ico/${dom}.webp`;
-    const label = hideText ? '' : `<span>${node.title}</span>`;
+    const safeTitle = escapeHtml(node.title);
+    const label = hideText ? '' : `<span>${safeTitle}</span>`;
     el.innerHTML = `<div class="icon-wrapper"><img src="${icon}" onerror="this.src='${FALLBACK_ICON}'"></div>${label}${isF && path.length>1?'<span class="arrow-right">▶</span>':''}`;
-    if(isF) el.onclick = e => { e.stopPropagation(); document.getElementById('ctx-menu').style.display='none'; openMenu(el, node, path); }; else el.href = node.url;
+    if(isF) {
+        el.onclick = e => { e.stopPropagation(); document.getElementById('ctx-menu').style.display='none'; openMenu(el, node, path); };
+    } else {
+        let safeUrl = node.url || '';
+        if (safeUrl.toLowerCase().trim().startsWith('javascript:')) safeUrl = 'about:blank';
+        el.href = safeUrl;
+    }
     return el;
 }
+
 function openMenu(pEl, node, path) {
     const level = path.length; closeFromLevel(level-1);
     const panel = document.createElement('div'); panel.className='menu-panel'; panel.dataset.path = JSON.stringify(path);
@@ -137,6 +164,7 @@ function openMenu(pEl, node, path) {
         panel.style.top = Math.max(5, top) + 'px'; panel.style.left = left + 'px';
     }
 }
+
 function showOverflowMenu(items, rect, start) { 
     closeFromLevel(0); const p = document.createElement('div'); p.className='menu-panel'; items.forEach((it, i) => p.appendChild(createItem(it, [start+i]))); document.body.appendChild(p); openPanels[0]=p; 
     if(!isMobile()){ 
@@ -147,6 +175,7 @@ function showOverflowMenu(items, rect, start) {
         p.style.left=Math.max(5, rect.right-180)+'px'; 
     } 
 }
+
 function handleCtx(e, path) {
     activePath = [...path]; 
     const menu = document.getElementById('ctx-menu'); 
@@ -171,10 +200,15 @@ function handleCtx(e, path) {
         mti.querySelector('span').innerText = node.icon_only ? "显示名称" : "仅显示图标"; 
     } else { mti.style.display='none'; }
 }
+
 window.addEventListener('contextmenu', e => { const item = e.target.closest('.item'), nav = e.target.closest('#nav-bar'), pan = e.target.closest('.menu-panel'); if(item || nav || pan) { e.preventDefault(); handleCtx(e, item?JSON.parse(item.dataset.path):(pan?JSON.parse(pan.dataset.path):[])); } else closeAllMenusInternal(); });
+
 function openMoveTool(e) { const tool = document.getElementById('move-tool'); tool.style.display='flex'; document.getElementById('move-tool-title').innerText = "移动: "+getNode(activePath).title; if(!isMobile()){ tool.style.left=e.pageX+'px'; tool.style.top=e.pageY+'px'; } updateMoveButtons(); document.getElementById('ctx-menu').style.display='none'; }
+
 function updateMoveButtons() { const idx = activePath[activePath.length-1], pP = activePath.slice(0,-1), arr = pP.length?getNode(pP).children:getToolbarList(), isB = activePath.length===1; document.getElementById('btn-up').className = (!isB && idx>0)?'move-btn':'move-btn disabled'; document.getElementById('btn-down').className = (!isB && idx<arr.length-1)?'move-btn':'move-btn disabled'; document.getElementById('btn-left').className = (isB && idx>0)?'move-btn':'move-btn disabled'; document.getElementById('btn-right').className = (isB && idx<arr.length-1)?'move-btn':'move-btn disabled'; }
+
 async function onMoveItem(dir) { const idx = activePath[activePath.length-1], pP = activePath.slice(0,-1), arr = pP.length?getNode(pP).children:getToolbarList(), nI = idx + dir; if(nI>=0 && nI<arr.length){ [arr[idx], arr[nI]] = [arr[nI], arr[idx]]; activePath[activePath.length-1]=nI; render(); updateMoveButtons(); save(); } }
+
 function openModal(mode) {
     modalMode = mode; closeAllMenusInternal(); document.getElementById('modal-overlay').style.display='flex'; 
     const isSearch = mode === 'search';
@@ -185,26 +219,88 @@ function openModal(mode) {
     if(isSearch){ document.getElementById('modal-title').innerText = "搜索书签"; document.getElementById('inp-search-keyword').value = ''; document.getElementById('search-results').innerHTML = ''; setTimeout(() => document.getElementById('inp-search-keyword').focus(), 50); }
     else {
         document.getElementById('modal-title').innerText = mode==='edit'?"编辑书签":mode==='addLink'?"添加网页":"添加文件夹";
-        const fdr = document.getElementById('inp-folder'); fdr.innerHTML='<option value="[]">根目录</option>'; const walk = (ns, p, d) => ns.forEach((n,i)=>{ if(n.children){ const cp=[...p,i]; const o=document.createElement('option'); o.value=JSON.stringify(cp); o.innerText='　'.repeat(d)+'📁 '+n.title; fdr.appendChild(o); walk(n.children,cp,d+1); }}); walk(getToolbarList(), [], 1);
+        const fdr = document.getElementById('inp-folder'); fdr.innerHTML='<option value="[]">根目录</option>'; 
+        const walk = (ns, p, d) => ns.forEach((n,i)=>{ 
+            if(n.children){ 
+                const cp=[...p,i]; 
+                if (mode === 'edit') {
+                    const currentNode = getNode(activePath);
+                    if (currentNode && currentNode.children) {
+                        const isSelfOrChild = cp.length >= activePath.length && activePath.every((val, idx) => val === cp[idx]);
+                        if (isSelfOrChild) return;
+                    }
+                }
+                const o=document.createElement('option'); 
+                o.value=JSON.stringify(cp); 
+                o.innerText='　'.repeat(d)+'📁 '+escapeHtml(n.title); 
+                fdr.appendChild(o); 
+                walk(n.children,cp,d+1); 
+            }
+        }); 
+        walk(getToolbarList(), [], 1);
         if(mode==='edit'){ const n=getNode(activePath); document.getElementById('inp-name').value=n.title; document.getElementById('inp-url').value=n.url||''; document.getElementById('url-field').style.display=n.children?'none':'block'; document.getElementById('inp-folder').value = JSON.stringify(activePath.slice(0, -1)); }
         else { document.getElementById('inp-name').value=''; document.getElementById('inp-url').value='https://'; document.getElementById('url-field').style.display=mode==='addLink'?'block':'none'; const curP = openPanels.find(p => p && p.style.display !== 'none'); if (curP && curP.dataset.path) document.getElementById('inp-folder').value = curP.dataset.path; }
     }
 }
-async function save() { await fetch('/api/save_bookmarks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(tree)}); render(); }
-function confirmDialog() {
-        const name = document.getElementById('inp-name').value.trim(), url = document.getElementById('inp-url').value.trim(), folderPath = JSON.parse(document.getElementById('inp-folder').value);
-        if (!name) return; let newNode = { title: name };
-        if (modalMode === 'addLink' || (modalMode === 'edit' && !getNode(activePath).children)) newNode.url = url;
-        else if (modalMode === 'addFolder') newNode.children = [];
-        if (modalMode === 'edit') { const oldNode = getNode(activePath); newNode.icon_only = oldNode.icon_only; Object.assign(oldNode, newNode); const oldPath = activePath.slice(0, -1); if (JSON.stringify(oldPath) !== JSON.stringify(folderPath)) { const oldIdx = activePath[activePath.length-1], oldParent = oldPath.length ? getNode(oldPath).children : getToolbarList(); oldParent.splice(oldIdx, 1); const newParent = folderPath.length ? getNode(folderPath).children : getToolbarList(); newParent.push(oldNode); } }
-        else { const targetFolder = folderPath.length ? getNode(folderPath) : tree.bookmarks[0]; if (!targetFolder.children) targetFolder.children = []; targetFolder.children.push(newNode); }
-        closeDialog(); save();
+
+async function save() { 
+    localStorage.setItem('last_bookmarks', JSON.stringify(tree));
+    render(); 
+    try {
+        await fetch('/api/save_bookmarks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(tree)});
+    } catch (e) {
+        console.error("Save failed:", e);
+    }
 }
+
+function confirmDialog() {
+    const name = document.getElementById('inp-name').value.trim(), url = document.getElementById('inp-url').value.trim(), folderPath = JSON.parse(document.getElementById('inp-folder').value);
+    if (!name) return; 
+    
+    if (modalMode === 'edit') {
+        const currentNode = getNode(activePath);
+        if (currentNode.children) {
+            const isRecursive = folderPath.length >= activePath.length && activePath.every((val, index) => val === folderPath[index]);
+            if (isRecursive) {
+                alert("无法将文件夹移动到其自身或其子文件夹内！");
+                return;
+            }
+        }
+    }
+
+    let newNode = { title: name };
+    if (modalMode === 'addLink' || (modalMode === 'edit' && !getNode(activePath).children)) {
+        newNode.url = url;
+    } else if (modalMode === 'addFolder') {
+        newNode.children = [];
+    }
+    if (modalMode === 'edit') { 
+        const oldNode = getNode(activePath); 
+        newNode.icon_only = oldNode.icon_only; 
+        Object.assign(oldNode, newNode); 
+        const oldPath = activePath.slice(0, -1); 
+        if (JSON.stringify(oldPath) !== JSON.stringify(folderPath)) { 
+            const oldIdx = activePath[activePath.length-1], oldParent = oldPath.length ? getNode(oldPath).children : getToolbarList(); 
+            const newParent = folderPath.length ? getNode(folderPath).children : getToolbarList();
+            if(newParent) {
+                const moved = oldParent.splice(oldIdx, 1)[0]; 
+                newParent.push(moved); 
+            }
+        } 
+    } else { 
+        const targetFolder = folderPath.length ? getNode(folderPath) : tree.bookmarks[0]; 
+        if (!targetFolder.children) targetFolder.children = []; 
+        targetFolder.children.push(newNode); 
+    }
+    closeDialog(); save();
+}
+
 function onDelete() { const i=activePath.pop(), pa=activePath.length?getNode(activePath).children:getToolbarList(); pa.splice(i,1); save(); closeAllMenusInternal(); }
 function onCut() { const i=activePath.pop(), pa=activePath.length?getNode(activePath).children:getToolbarList(); clipboard=pa.splice(i,1)[0]; save(); closeAllMenusInternal(); }
 function onPaste() { const n=activePath.length?getNode(activePath):null, ta=n?n.children:getToolbarList(); if(ta){ ta.push(clipboard); clipboard=null; save(); } closeAllMenusInternal(); }
 function onToggleIconMode() { const n=getNode(activePath); n.icon_only=!n.icon_only; save(); closeAllMenusInternal(); }
 function refreshFloatingPanels() { openPanels.forEach(p=>{ if(p?.dataset.path){ const path=JSON.parse(p.dataset.path), n=getNode(path); p.innerHTML=''; n.children.forEach((c,i)=>p.appendChild(createItem(c,[...path,i]))); }}); }
+
 document.getElementById('inp-search-keyword').oninput = e => {
     const kw = e.target.value.toLowerCase(), res = document.getElementById('search-results'); res.innerHTML=''; if(!kw) return;
     const find = (ns, pathStack = []) => ns.forEach(n => { 
@@ -212,7 +308,10 @@ document.getElementById('inp-search-keyword').oninput = e => {
             const a = document.createElement('a'); a.className='ctx-item'; a.href=n.url; 
             const dom = n.url.split('/')[2].replace(/:/g,'-');
             const locationStr = pathStack.length > 0 ? pathStack.join(' > ') : '根目录';
-            a.innerHTML = `<img src="/static/ico/${dom}.webp" onerror="this.src='${FALLBACK_ICON}'" style="width:18px;height:18px;margin-right:12px;border-radius:3px;"><div class="search-info"><div style="font-weight:500;">${n.title}</div><div class="search-url">${n.url}</div><div class="search-path">位置: ${locationStr}</div></div>`; 
+            const safeTitle = escapeHtml(n.title);
+            const safePath = escapeHtml(locationStr);
+            const safeUrl = escapeHtml(n.url);
+            a.innerHTML = `<img src="/static/ico/${dom}.webp" onerror="this.src='${FALLBACK_ICON}'" style="width:18px;height:18px;margin-right:12px;border-radius:3px;"><div class="search-info"><div style="font-weight:500;">${safeTitle}</div><div class="search-url">${safeUrl}</div><div class="search-path">位置: ${safePath}</div></div>`; 
             res.appendChild(a); 
         } if(n.children) find(n.children, [...pathStack, n.title]); 
     }); find(getToolbarList());
